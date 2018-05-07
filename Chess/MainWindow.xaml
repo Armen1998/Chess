@@ -1,0 +1,30 @@
+﻿<Window x:Class="Chess.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Chess"
+        mc:Ignorable="d" Title="MainWindow" Background="LightGray" MinHeight="640" MinWidth="1000" MaxWidth="1000" MaxHeight="640" Height="640" Width="1000">
+
+    <Grid Name="table" Width="640" HorizontalAlignment="Left" MouseRightButtonDown="Table_MouseRightButtonDown"  Margin="0,0,0,-3"  MouseLeftButtonDown="Table_MouseDown" MouseLeftButtonUp="Table_MouseUp" MouseMove="Table_MouseMove">
+        <Image Name="chess" Stretch="Fill" Source="board-gray.png" />
+        <Button Name="start_game" Click="Start_game_Click" Content="Start Game" FontWeight="Bold" FontSize="14px" Margin="748,111,-253,463" />
+        <Label Content="Choose your color" Margin="676,15,-161,562" FontWeight="Bold" Padding="5, 5, 5, 5" />
+        <Label Content="Choose game difficulty" Margin="676,70,-191,501" FontWeight="Bold" />
+        <Button Name="finish_oponent_steps" Click="Finish_oponent_steps_Click"  Content="Finish" FontWeight="Bold" FontSize="14px" Margin="825,560,-330,15" />
+        <ComboBox Margin="855,70,-311,511" Name="depth_selector" >
+            <ComboBoxItem IsSelected="True">1</ComboBoxItem>
+            <ComboBoxItem>2</ComboBoxItem>
+            <ComboBoxItem>4</ComboBoxItem>
+            <ComboBoxItem>6</ComboBoxItem>
+        </ComboBox>
+        <ListBox Name="your_steps" Margin="654,207,-161,60" Background="LightGray">
+        </ListBox>
+        <Label Margin="654,164,-161,410" Content="Your Steps" FontWeight="Bold" Padding="5, 5, 5, 5" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" RenderTransformOrigin="0.5,0.5" />
+        <Label Margin="825,166,-332,410" Content="Opponent's Steps" FontWeight="Bold" Padding="5, 5, 5, 5" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+        <ListBox Name="opponent_steps" Margin="825,207,-332,60" Background="LightGray">
+        </ListBox>
+        <RadioButton Name="radio_button_white" Checked="Radio_button_Checked" Content="White" IsChecked="True" FontWeight="Bold" Foreground="White" GroupName="color" Margin="806,21,-230,562" />
+        <RadioButton Name="black" Content="Black" Checked="Radio_button_Checked" FontWeight="Bold" GroupName="color" Margin="892,21,-311,562" />
+    </Grid>
+</Window>
