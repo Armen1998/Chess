@@ -11,10 +11,10 @@ namespace Chess
 
     class MiniMaxTree
     {
-        static string color1;
-        static string color2;
-        public static List<List<Figures>> listOfLists = new List<List<Figures>>();
-        public static Figures GetFigure(int x, int y, List<Figures> figures)
+        string color1;
+        string color2;
+        public List<List<Figures>> listOfLists = new List<List<Figures>>();
+        public Figures GetFigure(int x, int y, List<Figures> figures)
         {
             foreach (var l in figures)
             {
@@ -26,7 +26,7 @@ namespace Chess
 
             return null;
         }
-        public static void AddFigureSteps(string Name, int indexX, int indexY, List<Figures> figures)
+        public void AddFigureSteps(string Name, int indexX, int indexY, List<Figures> figures)
         {
             switch (Name)
             {
@@ -926,7 +926,7 @@ namespace Chess
                     break;
             }
         }
-        public static void AddBishopSteps(int indexX, int indexY, List<Figures> figures)
+        public void AddBishopSteps(int indexX, int indexY, List<Figures> figures)
         {
             
             int i = indexX, j = indexY;
@@ -1192,7 +1192,7 @@ namespace Chess
                 }
             }           
         }
-        public static void AddRookSteps(int indexX, int indexY, List<Figures> figures)
+        public void AddRookSteps(int indexX, int indexY, List<Figures> figures)
         {
             
             int i = indexX, j = indexY;
@@ -1451,10 +1451,10 @@ namespace Chess
                 }
             }         
         }
-        static List<Figures> newList = new List<Figures>();
+        
         public static List<Figures> GetNewBoard(List<Figures> list, Steps steps)
         {
-            newList.Clear();
+            List<Figures> newList = new List<Figures>();
             foreach(var l in list)
             {
                 newList.Add(new Figures(l.Name, l.positionX, l.positionY, l.Color, l.ImgSource));
@@ -1480,8 +1480,8 @@ namespace Chess
             
             return newList;
         }
-        static List<Figures> newFigures = new List<Figures>();
-        public static List<List<Figures>> GetAllSteps(List<Figures> figures, string color) 
+        List<Figures> newFigures = new List<Figures>();
+        public List<List<Figures>> GetAllSteps(List<Figures> figures, string color) 
         {
             listOfLists.Clear();
             newFigures.Clear();
@@ -1499,11 +1499,12 @@ namespace Chess
             }
             return listOfLists;
         }
-        static List<List<Figures>> listOfList2 = new List<List<Figures>>();
-        static Dictionary<string, List<Figures>> newDictionary = new Dictionary<string, List<Figures>>();
-        static List<string> newKeys = new List<string>();
-        public static string[] CreateNodes(string[] keys, Dictionary<string, List<Figures>> dictionary, string color)
-        {
+
+        List<List<Figures>> listOfList2 = new List<List<Figures>>();
+        Dictionary<string, List<Figures>> newDictionary = new Dictionary<string, List<Figures>>();
+        List<string> newKeys = new List<string>();
+        public string[] CreateNodes(string[] keys, Dictionary<string, List<Figures>> dictionary, string color)
+        {            
             color1 = color;
             if (color1 == "white")
                 color2 = "black";

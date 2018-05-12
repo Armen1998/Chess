@@ -207,53 +207,62 @@ namespace Chess
             {
                 currentLocationOfFigures.Add(new Figures(f.Name, f.positionX, f.positionY, f.Color, f.ImgSource));
             }            
+            
             for (int i = 0; i < calculatedSteps.ToArray().Length; i++)
             {
                 dictionary.Add("A " + i.ToString(), MiniMaxTree.GetNewBoard(currentLocationOfFigures, calculatedSteps[i]));
-            }             
+                
+            }
+
             selectedColor1 = GetSelectedFigure(calculatedSteps[0].startPosX, calculatedSteps[0].startPosY).Color;
             string selectedColor2;
             if (selectedColor1 == "white")
                 selectedColor2 = "black";
-            else selectedColor2 = "white";            
+            else selectedColor2 = "white";
             calculatedSteps.Clear();
             string[] keys = dictionary.Keys.ToArray();
 
+            MiniMaxTree tree = new MiniMaxTree();
             for (int i = 0; i < (2 * n - 1); i++)
             {
                 if (i % 2 == 0)
                 {
-                    keys = MiniMaxTree.CreateNodes(keys, dictionary, selectedColor2);
+                    keys = tree.CreateNodes(keys, dictionary, selectedColor2);
                 }
                 else
                 {
-                    keys = MiniMaxTree.CreateNodes(keys, dictionary, selectedColor1);
+                    keys = tree.CreateNodes(keys, dictionary, selectedColor1);
                 }
             }
             
             ChooseBestStep();
         }
+        private int GetCountOfSpaces(string key)
+        {
+            return key.Count(x => x.ToString() == " ");
+        }
         private void ChooseBestStep()
-        {           
+        {
             stepsPoints.Clear();
-            foreach(var d in dictionary)
+            foreach (var d in dictionary)
             {
-                if (d.Key.LastIndexOf(" ") == 4 * n - 1)
+                if (GetCountOfSpaces(d.Key) == 2 * n)
                 {
                     stepsPoints.Add(d.Key, CountPoints(d.Key));
-                }   
+                }
             }
-            //foreach (var stepP in stepsPoints)
-            //{
-            //    MessageBox.Show(stepP.Key + "  " + stepP.Value.ToString());
-            //}
+
+            for(int i = 0; i < 2 * n - 1; i++)
+            {
+
+            }
         }
-        
+
         private int CountPoints(string key)
         {
             int count = 0;
             
-            foreach(var l in dictionary[key])
+            foreach (var l in dictionary[key])
             {
                 if (l.Color == selectedColor1)
                 {
@@ -264,7 +273,7 @@ namespace Chess
                     count = count - figurePoints[l.Name];
                 }
             }
-            MessageBox.Show(key + "   " + count.ToString());
+
             return count;
         }
 
