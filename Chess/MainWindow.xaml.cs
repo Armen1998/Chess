@@ -20,14 +20,14 @@ namespace Chess
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>  
-    
+
     class Steps
     {
         public int startPosX;
         public int startPosY;
         public int endPosX;
-        public int endPosY;            
-        
+        public int endPosY;
+
         public Steps(int startPosX, int startPosY, int endPosX, int endPosY)
         {
             this.startPosX = startPosX;
@@ -202,16 +202,16 @@ namespace Chess
             GC.Collect();
             n = Convert.ToInt32(depth_selector.Text.ToString());
             currentLocationOfFigures.Clear();
-            dictionary.Clear();            
+            dictionary.Clear();
             foreach (var f in figures)
             {
                 currentLocationOfFigures.Add(new Figures(f.Name, f.positionX, f.positionY, f.Color, f.ImgSource));
-            }            
-            
+            }
+
             for (int i = 0; i < calculatedSteps.ToArray().Length; i++)
             {
                 dictionary.Add("A " + i.ToString(), MiniMaxTree.GetNewBoard(currentLocationOfFigures, calculatedSteps[i]));
-                
+
             }
 
             selectedColor1 = GetSelectedFigure(calculatedSteps[0].startPosX, calculatedSteps[0].startPosY).Color;
@@ -219,7 +219,6 @@ namespace Chess
             if (selectedColor1 == "white")
                 selectedColor2 = "black";
             else selectedColor2 = "white";
-            calculatedSteps.Clear();
             string[] keys = dictionary.Keys.ToArray();
 
             MiniMaxTree tree = new MiniMaxTree();
@@ -234,12 +233,58 @@ namespace Chess
                     keys = tree.CreateNodes(keys, dictionary, selectedColor1);
                 }
             }
-            
+
             ChooseBestStep();
         }
         private int GetCountOfSpaces(string key)
         {
             return key.Count(x => x.ToString() == " ");
+        }
+
+        private void MiniMax(bool isMinimizer, int deep)
+        {
+            if (isMinimizer)
+            {
+                Minimizer(deep);
+            }
+            else
+            {
+                Maximizer(deep);
+            }
+        }
+
+        private void Minimizer(int deep)
+        {
+            List<int> list = new List<int>();
+            foreach (var d in dictionary)
+            {
+                if (GetCountOfSpaces(d.Key) == deep)
+                {
+                    list.Clear();
+                    var value = stepsPoints.Where(x => x.Key.StartsWith(d.Key));
+                    foreach (var v in value)
+                    {
+                        list.Add(v.Value);
+                    }
+                    stepsPoints.Add(d.Key, list.Min());
+                }
+            }
+        }
+        private void Maximizer(int deep)
+        {
+            List<int> list = new List<int>();
+            foreach (var d in dictionary)
+            {
+                if (GetCountOfSpaces(d.Key) == deep)
+                {
+                    var value = stepsPoints.Where(x => x.Key.StartsWith(d.Key));
+                    foreach (var v in value)
+                    {
+                        list.Add(v.Value);
+                    }
+                    stepsPoints.Add(d.Key, list.Max());
+                }
+            }
         }
         private void ChooseBestStep()
         {
@@ -252,16 +297,44 @@ namespace Chess
                 }
             }
 
-            for(int i = 0; i < 2 * n - 1; i++)
+            for (int i = 0; i < 2 * n - 1; i++)
             {
-
+                MiniMax(i % 2 == 0 ? true : false, 2 * n - 1 - i);
             }
+            List<int> list = new List<int>();
+            var value = stepsPoints.Where(x => GetCountOfSpaces(x.Key) == 1);
+            foreach (var v in value)
+            {
+                list.Add(v.Value);
+            }
+            var index = list.IndexOf(list.Max());
+            var result = calculatedSteps[index];
+            image[result.endPosX, result.endPosY].Source = new BitmapImage(new Uri(GetSelectedFigure(result.startPosX, result.startPosY)?.ImgSource, UriKind.Relative));
+            image[result.endPosX, result.endPosY].Margin = new Thickness(result.endPosX * rowHeight, result.endPosY * columnWidth, 0, 0);
+            foreach (var f in figures)
+            {
+                if (f.positionX == result.endPosX && f.positionY == result.endPosY)
+                {
+                    figures.Remove(f);
+                    break;
+                }
+            }
+            foreach (var f in figures)
+            {
+                if (f.positionX == result.startPosX && f.positionY == result.startPosY)
+                {
+                    f.positionX = result.endPosX;
+                    f.positionY = result.endPosY;
+                }
+            }
+            image[result.startPosX, result.startPosY].Source = null;
+            calculatedSteps.Clear();
         }
 
         private int CountPoints(string key)
         {
             int count = 0;
-            
+
             foreach (var l in dictionary[key])
             {
                 if (l.Color == selectedColor1)
@@ -278,6 +351,355 @@ namespace Chess
         }
 
         string PawnCategory;
+
+        private bool IsMate(string color)
+        {
+            var king = figures.Where(x => x.Name == "king" && x.Color == color).FirstOrDefault();
+            int posX = king.positionX;
+            int posY = king.positionY;
+
+            List<Point> kingHint = new List<Point>();
+            kingHint.Add(new Point(0, 1));
+            kingHint.Add(new Point(0, -1));
+            kingHint.Add(new Point(1, 0));
+            kingHint.Add(new Point(-1, 0));
+            kingHint.Add(new Point(1, 1));
+            kingHint.Add(new Point(1, -1));
+            kingHint.Add(new Point(-1, 1));
+            kingHint.Add(new Point(-1, -1));
+
+            foreach (Point p in kingHint)
+            {
+                if (!Mate(posX + p.x, posY + p.y, color))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        private bool Mate(int pX, int pY, string color)
+        {
+            int posX = pX;
+            int posY = pY;
+            string[] anyFigures = { "queen", "rook" };
+            for (int i = posX + 1; i <= 7; i++)
+            {
+                if (GetSelectedFigure(i, posY)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(i, posY)?.Color != color)
+                {
+                    if (anyFigures.Contains(GetSelectedFigure(i, posY)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            for (int i = posX - 1; i >= 0; i--)
+            {
+                if (GetSelectedFigure(i, posY)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(i, posY)?.Color != color)
+                {
+                    if (anyFigures.Contains(GetSelectedFigure(i, posY)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            for (int j = posY + 1; j <= 7; j++)
+            {
+                if (GetSelectedFigure(posX, j)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(posX, j)?.Color != color)
+                {
+                    if (anyFigures.Contains(GetSelectedFigure(posX, j)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            for (int j = posY - 1; j >= 0; j--)
+            {
+                if (GetSelectedFigure(posX, j)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(posX, j)?.Color != color)
+                {
+                    if (anyFigures.Contains(GetSelectedFigure(posX, j)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            string[] anyFigures2 = { "queen", "bishop" };
+            int ii = posX, jj = posY;
+            while (ii < 7 && ii >= 0 && jj < 7 && jj >= 0)
+            {
+                ii++;
+                jj++;
+                if (GetSelectedFigure(ii, jj)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(ii, jj)?.Color != color)
+                {
+                    if (anyFigures2.Contains(GetSelectedFigure(ii, jj)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            ii = posX;
+            jj = posY;
+            while (ii <= 7 && ii > 0 && jj <= 7 && jj > 0)
+            {
+                ii--;
+                jj--;
+                if (GetSelectedFigure(ii, jj)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(ii, jj)?.Color != color)
+                {
+                    if (anyFigures2.Contains(GetSelectedFigure(ii, jj)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            ii = posX;
+            jj = posY;
+            while (ii < 7 && ii >= 0 && jj <= 7 && jj > 0)
+            {
+                ii++;
+                jj--;
+                if (GetSelectedFigure(ii, jj)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(ii, jj)?.Color != color)
+                {
+                    if (anyFigures2.Contains(GetSelectedFigure(ii, jj)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            ii = posX;
+            jj = posY;
+            while (ii <= 7 && ii > 0 && jj < 7 && jj >= 0)
+            {
+                ii--;
+                jj++;
+                if (GetSelectedFigure(ii, jj)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(ii, jj)?.Color != color)
+                {
+                    if (anyFigures2.Contains(GetSelectedFigure(ii, jj)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            List<Point> knightHint = new List<Point>();
+            knightHint.Add(new Point(2, 1));
+            knightHint.Add(new Point(2, -1));
+            knightHint.Add(new Point(1, 2));
+            knightHint.Add(new Point(1, -2));
+            knightHint.Add(new Point(-1, 2));
+            knightHint.Add(new Point(-1, -2));
+            knightHint.Add(new Point(-2, 1));
+            knightHint.Add(new Point(-2, -1));
+
+            foreach (Point p in knightHint)
+            {
+                if (GetSelectedFigure(posX + p.x, posY + p.y)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(posX + p.x, posY + p.y)?.Color != color)
+                {
+                    if (GetSelectedFigure(posX + p.x, posY + p.y)?.Name == "knight")
+                    {
+                        return true;
+                    }
+                }
+            }
+            //MessageBox.Show(king.positionX + "  " + king.positionY);
+            return false;
+        }
+        private bool IsShax(string color)
+        {
+            var king = figures.Where(x => x.Name == "king" && x.Color == color).FirstOrDefault();
+            int posX = king.positionX;
+            int posY = king.positionY;
+            string[] anyFigures = { "queen", "rook" };
+            for (int i = posX + 1; i <= 7; i++)
+            {
+                if (GetSelectedFigure(i, posY)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(i, posY)?.Color != color)
+                {
+                    if (anyFigures.Contains(GetSelectedFigure(i, posY)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            for (int i = posX - 1; i >= 0; i--)
+            {
+                if (GetSelectedFigure(i, posY)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(i, posY)?.Color != color)
+                {
+                    if (anyFigures.Contains(GetSelectedFigure(i, posY)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            for (int j = posY + 1; j <= 7; j++)
+            {
+                if (GetSelectedFigure(posX, j)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(posX, j)?.Color != color)
+                {
+                    if (anyFigures.Contains(GetSelectedFigure(posX, j)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            for (int j = posY - 1; j >= 0; j--)
+            {
+                if (GetSelectedFigure(posX, j)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(posX, j)?.Color != color)
+                {
+                    if (anyFigures.Contains(GetSelectedFigure(posX, j)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            string[] anyFigures2 = { "queen", "bishop" };
+            int ii = posX, jj = posY;
+            while (ii < 7 && ii >= 0 && jj < 7 && jj >= 0)
+            {
+                ii++;
+                jj++;
+                if (GetSelectedFigure(ii, jj)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(ii, jj)?.Color != color)
+                {
+                    if (anyFigures2.Contains(GetSelectedFigure(ii, jj)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            ii = posX;
+            jj = posY;
+            while (ii <= 7 && ii > 0 && jj <= 7 && jj > 0)
+            {
+                ii--;
+                jj--;
+                if (GetSelectedFigure(ii, jj)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(ii, jj)?.Color != color)
+                {
+                    if (anyFigures2.Contains(GetSelectedFigure(ii, jj)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            ii = posX;
+            jj = posY;
+            while (ii < 7 && ii >= 0 && jj <= 7 && jj > 0)
+            {
+                ii++;
+                jj--;
+                if (GetSelectedFigure(ii, jj)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(ii, jj)?.Color != color)
+                {
+                    if (anyFigures2.Contains(GetSelectedFigure(ii, jj)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            ii = posX;
+            jj = posY;
+            while (ii <= 7 && ii > 0 && jj < 7 && jj >= 0)
+            {
+                ii--;
+                jj++;
+                if (GetSelectedFigure(ii, jj)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(ii, jj)?.Color != color)
+                {
+                    if (anyFigures2.Contains(GetSelectedFigure(ii, jj)?.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            List<Point> knightHint = new List<Point>();
+            knightHint.Add(new Point(2, 1));
+            knightHint.Add(new Point(2, -1));
+            knightHint.Add(new Point(1, 2));
+            knightHint.Add(new Point(1, -2));
+            knightHint.Add(new Point(-1, 2));
+            knightHint.Add(new Point(-1, -2));
+            knightHint.Add(new Point(-2, 1));
+            knightHint.Add(new Point(-2, -1));
+
+            foreach (Point p in knightHint)
+            {
+                if (GetSelectedFigure(posX + p.x, posY + p.y)?.Color == color)
+                {
+                    break;
+                }
+                if (GetSelectedFigure(posX + p.x, posY + p.y)?.Color != color)
+                {
+                    if (GetSelectedFigure(posX + p.x, posY + p.y)?.Name == "knight")
+                    {
+                        return true;
+                    }
+                }
+            }
+            //MessageBox.Show(king.positionX + "  " + king.positionY);
+            return false;
+        }
         private void Finish_oponent_steps_Click(object sender, RoutedEventArgs e)
         {
             your_steps.Items.Clear();
@@ -293,11 +715,17 @@ namespace Chess
                     }
                 }
             }
+            var color = nonPlayingColor;
             if (nonPlayingColor == "black")
                 nonPlayingColor = "white";
             else nonPlayingColor = "black";
 
             Calculate();
+            if (IsShax(color))
+            {
+                MessageBox.Show("Shaaax");
+            }
+
         }
         int clickedLeftButtonPosX = -1;
         int clickedLeftButtonPosY = -1;
@@ -307,7 +735,7 @@ namespace Chess
         int startX;
         int startY;
         int endX;
-        int endY;        
+        int endY;
         private void Table_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (GetSelectedFigure((int)((e.GetPosition(this).X) / rowHeight), (int)((e.GetPosition(this).Y) / columnWidth))?.Color == nonPlayingColor && matrix[(int)((e.GetPosition(this).X) / rowHeight), (int)((e.GetPosition(this).Y) / columnWidth)] != 2)
@@ -350,9 +778,9 @@ namespace Chess
                 clickedLeftButtonPosX = (int)((e.GetPosition(this).X) / rowHeight);
                 clickedLeftButtonPosY = (int)((e.GetPosition(this).Y) / columnWidth);
                 if (GetSelectedFigure(clickedLeftButtonPosX, clickedLeftButtonPosY) != null)
-                {   
+                {
                     currentColor = GetSelectedFigure(clickedLeftButtonPosX, clickedLeftButtonPosY)?.Color;
-                    qar = $"{GetSelectedFigure(clickedLeftButtonPosX, clickedLeftButtonPosY)?.Name} - {clickedLeftButtonPosX} / {clickedLeftButtonPosY} to ";                   
+                    qar = $"{GetSelectedFigure(clickedLeftButtonPosX, clickedLeftButtonPosY)?.Name} - {clickedLeftButtonPosX} / {clickedLeftButtonPosY} to ";
                     startX = clickedLeftButtonPosX;
                     startY = clickedLeftButtonPosY;
                 }
@@ -396,7 +824,7 @@ namespace Chess
                             opponent_steps.Items.Add(qar + step);
                             opponentSelectedSteps.Add(qar + step);
                         }
-                    }                    
+                    }
                     calculatedSteps.Add(new Steps(startX, startY, endX, endY));
                     step = "";
 
@@ -407,7 +835,7 @@ namespace Chess
                     clickedFigure.AddHint(ref hint, ref matrix, figures, GetSelectedFigure(clickedLeftButtonPosX, clickedLeftButtonPosY)?.Color);
                 }
             }
-        }     
+        }
         private void Table_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (GetSelectedFigure((int)((e.GetPosition(this).X) / rowHeight), (int)((e.GetPosition(this).Y) / columnWidth))?.Color == nonPlayingColor)
@@ -418,9 +846,9 @@ namespace Chess
             {
                 isFigureCliked = true;
                 clickedMousePosX = (int)((e.GetPosition(this).X) / rowHeight);
-                clickedMousePosY = (int)((e.GetPosition(this).Y) / columnWidth);                
-                clickedFigure = GetSelectedFigure(clickedMousePosX, clickedMousePosY);                
-                clickedFigure.AddHint(ref hint, ref matrix, figures, GetSelectedFigure(clickedMousePosX, clickedMousePosY)?.Color);               
+                clickedMousePosY = (int)((e.GetPosition(this).Y) / columnWidth);
+                clickedFigure = GetSelectedFigure(clickedMousePosX, clickedMousePosY);
+                clickedFigure.AddHint(ref hint, ref matrix, figures, GetSelectedFigure(clickedMousePosX, clickedMousePosY)?.Color);
                 deltaX = e.GetPosition(this).X - image[clickedMousePosX, clickedMousePosY].Margin.Left;
                 deltaY = e.GetPosition(this).Y - image[clickedMousePosX, clickedMousePosY].Margin.Top;
             }
@@ -434,7 +862,7 @@ namespace Chess
             double mousePosY = (e.GetPosition(this).Y) / columnWidth;
             double eatenPosX = (e.GetPosition(this).X) / rowHeight;
             double eatenPosY = (e.GetPosition(this).Y) / columnWidth;
-
+            string anyColor = "";
             if (GetSelectedFigure(clickedMousePosX, clickedMousePosY) != null)
             {
                 image[(int)mousePosX, (int)mousePosY].Source = image[clickedMousePosX, clickedMousePosY].Source;
@@ -468,16 +896,31 @@ namespace Chess
                     opponentSelectedSteps.Clear();
                     your_steps.Items.Clear();
                     opponent_steps.Items.Clear();
-
+                    anyColor = nonPlayingColor;
                     if (nonPlayingColor == "black")
                         nonPlayingColor = "white";
                     else nonPlayingColor = "black";
+
 
                     foreach (var figure in figures)
                     {
                         if (figure.positionX == (int)eatenPosX && figure.positionY == (int)eatenPosY)
                         {
-                            figures.Remove(figure);
+                            if (figure.Name != "king")
+                            {
+                                figures.Remove(figure);
+                            }
+                            else
+                            {
+                                if (figure.Color == "black")
+                                {
+                                    MessageBox.Show("White Win");
+                                }
+                                else
+                                {
+                                    MessageBox.Show("Black Win");
+                                }
+                            }
                             break;
                         }
                     }
@@ -491,6 +934,20 @@ namespace Chess
                         {
                             figure.positionX = (int)mousePosX;
                             figure.positionY = (int)mousePosY;
+
+                            if (matrix[(int)mousePosX, (int)mousePosY] == 2)
+                            {
+                                if (IsShax(anyColor))
+                                {
+                                    MessageBox.Show("Shaaax");
+                                }
+                                //if (IsMate(anyColor))
+                                //{
+                                //    MessageBox.Show("Mate");
+                                //}                               
+                            }
+
+
                         }
                     }
                 }
@@ -520,6 +977,14 @@ namespace Chess
                 }
 
             }
+            //if (figures.Where(x => x.Name == "king" && x.Color == "black").ToArray().Length == 0)
+            //{
+            //    MessageBox.Show("White Win");
+            //}
+            //else if(figures.Where(x => x.Name == "king" && x.Color == "white").ToArray().Length == 0)
+            //{
+            //    MessageBox.Show("Black Win");
+            //}
 
         }
 
